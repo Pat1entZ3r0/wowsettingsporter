@@ -1,0 +1,80 @@
+{
+  "name": "forever-profile-porter",
+  "productName": "Forever Profile Porter",
+  "version": "1.2.0",
+  "description": "Snapshot a WoW Forever Beta character's addons and settings and port them to a new character on live, rewriting names, ruleset and realm inside every addon profile.",
+  "author": "First to Forever",
+  "license": "MIT",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "test:ui": "node test/ui.e2e.js",
+    "dist:win": "electron-builder --win --x64 --publish never",
+    "test:electron": "xvfb-run -a node test/electron.e2e.js"
+  },
+  "dependencies": {
+    "adm-zip": "^0.6.1"
+  },
+  "devDependencies": {
+    "electron": "^38.8.6",
+    "electron-builder": "^26.15.3",
+    "playwright-core": "^1.64.1",
+    "resedit": "^2.0.3"
+  },
+  "build": {
+    "appId": "com.firsttoforever.profileporter",
+    "productName": "Forever Profile Porter",
+    "copyright": "MIT License",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "build/icon.png",
+      "package.json",
+      "!**/*.map"
+    ],
+    "asar": true,
+    "afterPack": "build/after-pack.js",
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Forever Profile Porter",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "artifactName": "ForeverProfilePorter-${version}-Setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "ForeverProfilePorter-${version}-Portable.${ext}"
+    },
+    "publish": null
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Pat1entZ3r0/wowsettingsporter.git"
+  },
+  "homepage": "https://github.com/Pat1entZ3r0/wowsettingsporter"
+}

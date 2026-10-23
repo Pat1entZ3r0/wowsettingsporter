@@ -1,0 +1,40 @@
+name: Release
+
+# Builds the Windows installer and portable exe and attaches them to a GitHub release.
+# Runs on a pushed v* tag, or by hand (which releases the version in package.json).
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npx electron-builder --win --x64 --publish never
+      - id: version
+        shell: bash
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Forever Profile Porter ${{ steps.version.outputs.version }}
+          files: |
+            dist/ForeverProfilePorter-*-Portable.exe
+            dist/ForeverProfilePorter-*-Setup.exe
+          body: |
+            **Download `ForeverProfilePorter-${{ steps.version.outputs.version }}-Portable.exe`** to run it with nothing to install, or the `-Setup.exe` to install it with shortcuts. Windows 10/11, 64-bit.
+
+            The exe isn't code-signed, so SmartScreen may warn on first run: click **More info**, then **Run anyway**.
+
+            See the [README](https://github.com/Pat1entZ3r0/wowsettingsporter#readme) for how to use it.

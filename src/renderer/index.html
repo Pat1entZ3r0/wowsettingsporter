@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:">
+  <title>Forever Profile Porter</title>
+  <link rel="icon" href="../../build/icon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="../../build/icon.png" alt="" width="40" height="40">
+      <div>
+        <div class="brand-name"><span class="gold">Forever</span> Profile Porter</div>
+        <div class="brand-sub" id="version"></div>
+      </div>
+    </div>
+    <nav>
+      <button class="nav" data-view="setup"><span class="step">1</span>Game folders</button>
+      <button class="nav" data-view="snapshot"><span class="step">2</span>Snapshots</button>
+      <button class="nav" data-view="apply"><span class="step">3</span>Apply to a character</button>
+      <button class="nav" data-view="backups"><span class="step"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 1.5a6.5 6.5 0 1 1-6.1 4.3l1.4.5A5 5 0 1 0 8 3v2L4.5 2.25 8 0z" fill="currentColor"/></svg></span>Backups</button>
+    </nav>
+    <div class="sidebar-foot">
+      Exit World of Warcraft before applying. Every apply backs up what it changes first.
+    </div>
+  </aside>
+
+  <main>
+    <div id="toast" class="toast" hidden></div>
+
+    <!-- 1. game folders -->
+    <section class="view" id="view-setup">
+      <header class="view-head">
+        <h1>Game folders</h1>
+        <p>Where the beta and the live WoW Forever clients are installed. They're found automatically; pick another folder if yours is somewhere else.</p>
+      </header>
+      <div class="cards two">
+        <div class="card" id="beta-card">
+          <h2>Beta <span class="pill">copy from</span></h2>
+          <label class="field">Game folder
+            <select id="beta-select"></select>
+          </label>
+          <div class="row">
+            <button class="btn" data-browse="beta">Browse…</button>
+            <code class="path" id="beta-path"></code>
+          </div>
+          <div class="facts" id="beta-facts"></div>
+        </div>
+        <div class="card" id="live-card">
+          <h2>Live <span class="pill">copy to</span></h2>
+          <label class="field">Game folder
+            <select id="live-select"></select>
+          </label>
+          <div class="row">
+            <button class="btn" data-browse="live">Browse…</button>
+            <code class="path" id="live-path"></code>
+          </div>
+          <div class="facts" id="live-facts"></div>
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn" id="redetect">Search again</button>
+      </div>
+      <div class="card info">
+        <h2>How it works</h2>
+        <ol class="howto">
+          <li><b>Snapshot</b> a beta character once its addons and settings are the way you like them.</li>
+          <li>On launch day, create your new character and <b>log in once</b>, then exit the game. That makes WoW create the character's folders.</li>
+          <li><b>Apply</b> the snapshot: type the new character's first and last name and pick the ruleset. The porter copies the addons and settings and rewrites every place the old name, ruleset and realm appear inside the addon data.</li>
+          <li>Log in. If something looks off, restore the backup from <b>Backups</b>.</li>
+        </ol>
+        <p class="muted">Everything stored on your PC is copied: addons and their settings, keybinds, macros, game options like auto loot and camera distance, chat windows and frame positions. Two things live only on Blizzard's servers and can't be copied as files: which spells sit on your action bars, and Edit Mode layouts. For Edit Mode, copy the layout string in game and save it with the snapshot: the Apply page then gives you a Copy button to paste it into the new character.</p>
+      </div>
+    </section>
+
+    <!-- 2. snapshots -->
+    <section class="view" id="view-snapshot">
+      <header class="view-head">
+        <h1>Snapshots</h1>
+        <p>A snapshot keeps a copy of one character's addons and settings, ready to apply to any new character.</p>
+      </header>
+      <div class="card">
+        <h2>New snapshot from the beta</h2>
+        <div id="snap-nobeta" class="notice warn" hidden>Choose the beta game folder first, under <a href="#" data-goto="setup">Game folders</a>.</div>
+        <div id="snap-form">
+          <label class="field narrow">Account folder
+            <select id="snap-account"></select>
+          </label>
+          <div class="label">Character</div>
+          <div class="char-grid" id="snap-chars"></div>
+          <div class="grid3">
+            <label class="field">First name<input id="snap-first" autocomplete="off"></label>
+            <label class="field">Last name<input id="snap-last" autocomplete="off"></label>
+            <label class="field">Snapshot name<input id="snap-name" autocomplete="off" placeholder="e.g. Mage UI, final beta"></label>
+          </div>
+          <div class="checks">
+            <label><input type="checkbox" id="snap-inc-addons" checked> <span>The addons themselves <span class="muted" id="snap-addon-count"></span></span></label>
+            <details class="addon-pick" id="snap-addon-details"><summary>Choose addons</summary><div class="addon-list" id="snap-addon-list"></div></details>
+            <label><input type="checkbox" id="snap-inc-account" checked> <span>Account-wide addon data, keybinds and macros</span></label>
+            <label><input type="checkbox" id="snap-inc-config" checked> <span>Client settings (graphics, sound, interface options in Config.wtf)</span></label>
+          </div>
+          <div class="row">
+            <button class="btn primary" id="snap-take">Take snapshot</button>
+            <span class="status" id="snap-status"></span>
+          </div>
+        </div>
+      </div>
+      <div class="list-head">
+        <h2>Saved snapshots</h2>
+        <button class="btn" id="snap-import">Import…</button>
+      </div>
+      <div id="snap-list" class="stack"></div>
+    </section>
+
+    <!-- 3. apply -->
+    <section class="view" id="view-apply">
+      <header class="view-head">
+        <h1>Apply to a character</h1>
+        <p>Copies a snapshot onto a character (on live, or on the beta to test it) and rewrites the character's name, ruleset and realm inside every addon's saved data.</p>
+      </header>
+      <div id="apply-empty" class="notice" hidden>No snapshots yet. Take one under <a href="#" data-goto="snapshot">Snapshots</a>.</div>
+      <div id="apply-form">
+        <div class="cards two">
+          <div class="card">
+            <h2>Snapshot</h2>
+            <label class="field">Snapshot
+              <select id="ap-snapshot"></select>
+            </label>
+            <div class="facts" id="ap-source"></div>
+            <div id="ap-layouts"></div>
+          </div>
+          <div class="card">
+            <h2>Character to apply to</h2>
+            <div class="grid2">
+              <label class="field">First name<input id="ap-first" autocomplete="off"></label>
+              <label class="field">Last name<input id="ap-last" autocomplete="off"></label>
+              <label class="field">Ruleset
+                <select id="ap-ruleset">
+                  <option value="PvE">Normal</option>
+                  <option value="PvP">PvP</option>
+                  <option value="RP">Roleplaying</option>
+                  <option value="Hardcore">Hardcore</option>
+                </select>
+              </label>
+              <label class="field">Faction
+                <select id="ap-faction">
+                  <option value="">Same as the snapshot</option>
+                  <option value="Alliance">Alliance</option>
+                  <option value="Horde">Horde</option>
+                </select>
+              </label>
+            </div>
+            <label class="field">Game to apply to
+              <select id="ap-target"></select>
+            </label>
+            <label class="field">Account folder
+              <select id="ap-account"></select>
+            </label>
+            <input id="ap-account-custom" placeholder="Account folder name, e.g. 123456789#1" hidden autocomplete="off">
+            <div id="ap-found" class="found"></div>
+            <div id="ap-chars" class="chips"></div>
+          </div>
+        </div>
+
+        <details class="card" id="ap-advanced">
+          <summary><h2>Folders and identity details</h2><span class="muted">Filled in automatically. Change only if the preview shows something wrong.</span></summary>
+          <div class="grid2 adv">
+            <div>
+              <h3>Character to apply to</h3>
+              <label class="field">Realm folder<input id="ap-realm" list="ap-realm-list" autocomplete="off" placeholder="found automatically"></label>
+              <datalist id="ap-realm-list"></datalist>
+              <label class="field">Character folder<input id="ap-charfolder" autocomplete="off" placeholder="found automatically"></label>
+              <label class="field">Realm name older addons use<input id="ap-realmname" autocomplete="off" placeholder="unknown until the character logs in"></label>
+              <label class="field">Character GUID<input id="ap-guid" autocomplete="off" placeholder="Player-…"></label>
+            </div>
+            <div>
+              <h3>Snapshot character, as found in its data</h3>
+              <div class="grid2">
+                <label class="field">First name<input id="src-first" autocomplete="off"></label>
+                <label class="field">Last name<input id="src-last" autocomplete="off"></label>
+                <label class="field">Ruleset<input id="src-ruleset" autocomplete="off"></label>
+                <label class="field">Faction<input id="src-faction" autocomplete="off"></label>
+              </div>
+              <label class="field">Realm name<input id="src-realmname" autocomplete="off"></label>
+              <label class="field">Character GUID<input id="src-guid" autocomplete="off"></label>
+              <button class="btn small" id="src-save">Save these to the snapshot</button>
+            </div>
+          </div>
+        </details>
+
+        <div class="card">
+          <h2>What to copy</h2>
+          <div class="opts">
+            <div class="opt-group">
+              <div class="label">Addons</div>
+              <label><input type="radio" name="ap-addons" value="missing" checked> <span>Install the ones the game doesn't have yet</span></label>
+              <label><input type="radio" name="ap-addons" value="overwrite"> <span>Install all, replacing the installed copies</span></label>
+              <label><input type="radio" name="ap-addons" value="none"> <span>Don't copy addons</span></label>
+              <details class="addon-pick"><summary>Choose addons</summary><div class="addon-list" id="ap-addon-list"></div></details>
+            </div>
+            <div class="opt-group">
+              <div class="label">Account-wide addon data</div>
+              <label><input type="radio" name="ap-sv" value="merge" checked> <span>Merge into the existing data <span class="muted">(keeps your other characters)</span></span></label>
+              <label><input type="radio" name="ap-sv" value="replace"> <span>Replace the existing data</span></label>
+              <label><input type="radio" name="ap-sv" value="skip"> <span>Don't copy</span></label>
+              <details class="addon-pick"><summary>Choose files</summary><div class="addon-list" id="ap-sv-list"></div></details>
+            </div>
+            <div class="opt-group">
+              <div class="label">Settings</div>
+              <label><input type="checkbox" id="ap-char" checked> <span>Character settings: keybinds, macros, chat windows, frame positions, character options and per-character addon data</span></label>
+              <label><input type="checkbox" id="ap-acct" checked> <span>Account-wide game options (auto loot, interface and combat options), keybinds and macros</span></label>
+              <label><input type="checkbox" id="ap-config" checked> <span>Client settings (camera distance, graphics, sound and other Config.wtf options)</span></label>
+            </div>
+            <div class="opt-group">
+              <div class="label">Safety</div>
+              <label><input type="checkbox" id="ap-sync" checked> <span>Stop server sync replacing the ported keybinds and macros <span class="muted">(turns off the synchronize settings in Config.wtf)</span></span></label>
+              <label><input type="checkbox" id="ap-ood" checked> <span>Load out-of-date addons</span></label>
+              <label><input type="checkbox" id="ap-drop" checked> <span>Leave out other beta characters' entries</span></label>
+              <label><input type="checkbox" id="ap-firstname" checked> <span>Also rewrite text that is exactly the first name</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="row sticky-actions">
+          <button class="btn" id="ap-preview">Preview changes</button>
+          <button class="btn primary" id="ap-run" disabled>Apply</button>
+          <span class="status" id="ap-status"></span>
+        </div>
+        <div id="ap-plan"></div>
+      </div>
+    </section>
+
+    <!-- backups -->
+    <section class="view" id="view-backups">
+      <header class="view-head">
+        <h1>Backups</h1>
+        <p>Before every apply, the porter saves each file it's about to change, plus a full copy of that game's WTF folder. Restoring puts those files back and removes the ones the apply added.</p>
+      </header>
+      <div id="backup-list" class="stack"></div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
